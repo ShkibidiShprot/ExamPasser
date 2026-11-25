@@ -1,78 +1,79 @@
 # ExamPasser
 
-> Мінімалістичне кросбраузерне розширення для аналізу видимої частини екрана за допомогою Gemini API.
+> A minimalist cross-browser extension for analyzing the visible area of your screen with the Gemini API.
 
-ExamPasser робить скриншот поточної вкладки за гарячою клавішею або автоматично через заданий інтервал, надсилає його до Gemini та показує коротку відповідь у правому нижньому куті сторінки.
+ExamPasser captures the current tab manually or on a schedule, sends the screenshot to Gemini, and displays a compact answer in the bottom-right corner of the page.
 
-## Можливості
+**Languages:** [English](README.md) · [Українська](README.uk.md) · [Русский](README.ru.md)
+
+## Features
 
 - Manifest V3.
-- Працює в Chrome, Opera/Opera GX, Firefox і Zen Browser.
-- Аналіз видимої області поточної вкладки.
-- Ручний режим за гарячою клавішею.
-- Автоматичний режим зі встановленням інтервалу від 20 секунд.
-- Компактний оверлей без фону, рамок і перекриття контенту.
-- Закритий Shadow DOM для ізоляції стилів.
-- Вибір мови інтерфейсу: українська, російська або англійська.
-- Вибір швидкої моделі `gemini-3.5-flash-lite`.
-- Налаштування прозорості відповіді.
-- API‑ключ і налаштування зберігаються локально в браузері.
+- Supports Chrome, Opera/Opera GX, Firefox, and Zen Browser.
+- Visible-area screenshot analysis.
+- Manual hotkey mode.
+- Automatic capture mode with an interval starting at 20 seconds.
+- Compact overlay isolated with a closed Shadow DOM.
+- Ukrainian, Russian, and English interface.
+- Fast `gemini-3.5-flash-lite` model.
+- Adjustable answer opacity.
+- API key and settings stored locally in the browser.
 
-## Отримання API‑ключа
+## Get a Gemini API key
 
-1. Відкрий [Google AI Studio](https://aistudio.google.com/apikey).
-2. Увійди у свій Google‑акаунт.
-3. Натисни **Create API key**.
-4. Скопіюй ключ і встав його в ExamPasser.
-5. Натисни **Зберегти налаштування**.
+1. Open [Google AI Studio](https://aistudio.google.com/apikey).
+2. Sign in with your Google account.
+3. Click **Create API key**.
+4. Copy the key and paste it into ExamPasser.
+5. Click **Save settings**.
 
-Не публікуй API‑ключ і не передавай його іншим людям. Кожному користувачу краще використовувати власний ключ.
+Never publish or share your API key. Each user should use their own key.
 
-## Встановлення в Chrome або Opera GX
+## Install on Chrome or Opera GX
 
-1. Завантаж або клонуй цей репозиторій.
-2. Відкрий `chrome://extensions` у Chrome або `opera://extensions` в Opera GX.
-3. Увімкни **Developer mode / Режим розробника**.
-4. Натисни **Load unpacked / Завантажити розпаковане розширення**.
-5. Вибери кореневу папку проєкту, де лежить `manifest.json`.
-6. Закріпи ExamPasser на панелі браузера.
+1. Clone or download this repository.
+2. Open `chrome://extensions` in Chrome or `opera://extensions` in Opera GX.
+3. Enable **Developer mode**.
+4. Click **Load unpacked**.
+5. Select the project root containing `manifest.json`.
+6. Pin ExamPasser to the browser toolbar.
 
-Не переміщуй і не видаляй вибрану папку — браузер завантажує розширення безпосередньо з неї.
+Keep the selected folder in place because the browser loads the extension directly from it.
 
-## Встановлення у Firefox або Zen Browser
+## Install on Firefox or Zen Browser
 
-Для Firefox використовується `manifest.firefox.json`. Для постійного встановлення потрібен підписаний Mozilla файл `.xpi`.
+Firefox uses `manifest.firefox.json`. Permanent installation requires a Mozilla-signed `.xpi` package.
 
-1. Відправ Firefox‑версію на [Mozilla Add-on Developer Hub](https://addons.mozilla.org/developers/addon/submit/).
-2. Обери непублічне розповсюдження (**Unlisted / На ваш погляд**).
-3. Після перевірки завантаж підписаний `.xpi`.
-4. Відкрий `about:addons`.
-5. Натисни шестерню → **Install Add-on From File**.
-6. Вибери `.xpi`.
+1. Submit the Firefox version through the [Mozilla Add-on Developer Hub](https://addons.mozilla.org/developers/addon/submit/).
+2. Choose private distribution (**Unlisted**).
+3. Download the signed `.xpi` after review.
+4. Open `about:addons`.
+5. Select the gear menu → **Install Add-on From File**.
+6. Choose the `.xpi` file.
 
-## Керування
+## Controls
 
-- За замовчуванням доступна команда `Alt+Q`.
-- Альтернативна команда — `Alt+Shift+Q`.
-- Власну комбінацію можна змінити в меню розширення або в налаштуваннях браузера.
-- У ручному режимі новий аналіз запускається гарячою клавішею.
-- В автоматичному режимі аналіз запускається через встановлений інтервал.
+- Default command: `Alt+Q`.
+- Alternative command: `Alt+Shift+Q`.
+- Custom shortcuts can be configured from the extension menu or browser settings.
+- Manual mode starts an analysis with a hotkey.
+- Automatic mode starts analyses at the selected interval.
 
-## Структура
+## Project structure
 
-- `manifest.json` — Manifest V3 для Chrome.
-- `manifest.opera.json` — маніфест Opera.
-- `manifest.firefox.json` — маніфест Firefox/Zen Browser.
-- `background.js` — service worker або background script, скриншоти та запити до Gemini.
-- `content.js` — ізольований оверлей відповіді.
-- `popup.html` — меню налаштувань.
-- `popup.js` — логіка меню, локалізація та збереження налаштувань.
-- `icon.svg` — іконка розширення.
+- `manifest.json` — Chrome manifest.
+- `manifest.opera.json` — Opera manifest.
+- `manifest.firefox.json` — Firefox/Zen Browser manifest.
+- `background.js` — background logic, screenshots, scheduling, and Gemini requests.
+- `content.js` — isolated answer overlay.
+- `popup.html` — settings UI.
+- `popup.js` — settings logic, localization, and persistence.
+- `icon.svg` — extension icon.
 
-## Приватність
+## Privacy
 
-Скриншот передається до Google Gemini API тільки після запуску аналізу. Розширення не має власного сервера. API‑ключ, мова, режим роботи та інші налаштування зберігаються у локальному сховищі браузера.
+Screenshots are sent to the Google Gemini API only when an analysis is started. ExamPasser has no own server. The API key, language, work mode, and other settings are stored in the browser's local storage.
 
-## Ліцензія
+## License
 
-Ліцензія ще не задана.
+No license has been specified yet.
