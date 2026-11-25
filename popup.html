@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ExamPasser</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { position: relative; isolation: isolate; overflow-x: hidden; width: 318px; margin: 0; padding: 16px; color: #f4f2ff; background: #11111b; font-size: 12px; }
+    body::before, body::after { position: fixed; z-index: -1; width: 250px; height: 250px; border-radius: 50%; content: ""; pointer-events: none; transform: translate3d(0, 0, 0); }
+    body::before { top: -98px; left: -106px; background: conic-gradient(from 0deg, #765cff, #42c9ff, #b75cff, #ff70c9, #765cff); filter: blur(25px); opacity: .38; animation: gemini-orbit 10s linear infinite, gemini-drift-one 8s ease-in-out infinite alternate; }
+    body::after { right: -108px; bottom: -102px; background: radial-gradient(circle at 35% 35%, #4ee6d0 0 8%, #348cff 30%, #7a57ff 58%, transparent 73%); filter: blur(20px); opacity: .42; animation: gemini-drift-two 9s ease-in-out infinite alternate; }
+    @keyframes gemini-orbit { to { rotate: 360deg; } }
+    @keyframes gemini-drift-one { from { translate: 0 0; scale: 1; } to { translate: 74px 58px; scale: 1.34; } }
+    @keyframes gemini-drift-two { from { translate: 0 0; scale: 1.02; } to { translate: -72px -68px; scale: 1.38; } }
+    @media (prefers-reduced-motion: reduce) { body::before, body::after { animation: none; } }
+    .hero { display: flex; align-items: center; gap: 10px; margin: -2px 0 16px; }
+    .hero img { width: 34px; height: 34px; border-radius: 10px; box-shadow: 0 5px 18px #5c4dce55; }
+    .hero h1 { margin: 0; font-size: 17px; letter-spacing: -.02em; }
+    .hero p { margin: 2px 0 0; color: #9d9ab6; font-size: 10px; }
+    .language-select { width: auto; min-width: 86px; margin-left: auto; padding: 6px 7px; font-size: 10px; }
+    .section { margin-top: 13px; padding: 11px; border: 1px solid #2b2a3d; border-radius: 13px; background: #191927; }
+    .section-title { margin-bottom: 8px; color: #bcb8d2; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    label { display: block; margin: 10px 0 5px; color: #aaa6c0; font-size: 11px; font-weight: 600; }
+    label:first-child { margin-top: 0; }
+    input, textarea, select { width: 100%; padding: 8px 9px; border: 1px solid #35344c; border-radius: 8px; outline: none; color: #f4f2ff; background: #11111b; font: inherit; transition: border-color .15s, box-shadow .15s; }
+    .checkbox-row { display: flex; align-items: center; gap: 7px; margin-top: 7px; color: #aaa6c0; font-size: 10px; cursor: pointer; }
+    .checkbox-row input { width: 13px; height: 13px; margin: 0; accent-color: #7968ff; cursor: pointer; }
+    .api-help { margin-top: 8px; color: #aaa6c0; font-size: 10px; line-height: 1.4; }
+    .api-help summary { color: #9d8cff; cursor: pointer; }
+    .api-help summary:hover { color: #c1b8ff; }
+    .api-help ol { margin: 7px 0 7px 17px; padding: 0; }
+    .api-help li { margin: 3px 0; }
+    .api-help a { color: #72b5ff; }
+    .api-warning { color: #d6ad72; }
+    input:focus, textarea:focus, select:focus { border-color: #7968ff; box-shadow: 0 0 0 3px #7968ff22; }
+    textarea { min-height: 66px; overflow-y: hidden; resize: none; line-height: 1.4; }
+    input:disabled { opacity: .45; cursor: not-allowed; }
+    .mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 3px; border: 1px solid #35344c; border-radius: 9px; background: #11111b; }
+    .mode-button { margin: 0; padding: 7px 5px; color: #9692ae; background: transparent; border: 0; box-shadow: none; font-size: 11px; }
+    .mode-button.active { color: #fff; background: #6556e9; box-shadow: 0 3px 10px #5d55da44; }
+    .interval-field.hidden { display: none; }
+    small { display: block; margin-top: 6px; color: #817d99; font-size: 10px; line-height: 1.35; }
+    .range-row { display: flex; align-items: center; gap: 9px; }
+    input[type="range"] { padding: 0; accent-color: #7968ff; }
+    #opacity-value { min-width: 30px; color: #c9c4ff; text-align: right; font-variant-numeric: tabular-nums; }
+    button { width: 100%; margin-top: 13px; padding: 9px; border: 0; border-radius: 9px; color: #fff; background: linear-gradient(135deg, #715fff, #4e8dff); box-shadow: 0 7px 18px #5d55da33; cursor: pointer; font: inherit; font-weight: 700; transition: transform .15s, filter .15s, background .2s, box-shadow .2s; }
+    button:hover { filter: brightness(1.1); }
+    button:active, button.pressed { transform: translateY(1px); color: #fff; background: linear-gradient(135deg, #35c878, #19a968); box-shadow: 0 0 0 2px #57e39a55, 0 7px 18px #23bd7555; }
+    button.secondary { margin-top: 8px; color: #c9c4ff; background: #222139; border: 1px solid #393653; box-shadow: none; }
+    button.secondary:active, button.secondary.pressed { color: #fff; background: linear-gradient(135deg, #35c878, #19a968); border-color: #57e39a; box-shadow: 0 0 0 2px #57e39a33, 0 7px 18px #23bd7544; }
+    button.success { color: #fff; background: linear-gradient(135deg, #35c878, #19a968); border-color: #57e39a; box-shadow: 0 0 0 2px #57e39a33, 0 7px 18px #23bd7544; }
+    #status { min-height: 15px; margin-top: 9px; color: #7ee2b8; text-align: center; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <img src="icon.svg" alt="">
+    <div><h1>ExamPasser</h1><p data-i18n="tagline">Швидкий погляд на екран</p></div>
+    <select id="language" class="language-select" aria-label="Мова">
+      <option value="uk">🇺🇦 UA</option>
+      <option value="ru">🇷🇺 RU</option>
+      <option value="en">🇬🇧 EN</option>
+    </select>
+  </header>
+  <section class="section">
+    <div class="section-title"><span data-i18n="connection">Підключення</span> · Gemini</div>
+    <label for="api-key" data-i18n="apiKey">Gemini API Key</label>
+    <input id="api-key" type="text" autocomplete="off" spellcheck="false" placeholder="AIza...">
+    <label class="checkbox-row"><input id="hide-api-key" type="checkbox"><span data-i18n="hideApiKey">Сховати API ключ</span></label>
+    <details class="api-help">
+      <summary data-i18n="apiHelpTitle">Як отримати API-ключ?</summary>
+      <ol>
+        <li data-i18n="apiHelpStep1">Увійдіть у Google-акаунт.</li>
+        <li data-i18n="apiHelpStep2">Відкрийте Google AI Studio та розділ API keys.</li>
+        <li data-i18n="apiHelpStep3">Натисніть Create API key і скопіюйте ключ.</li>
+        <li data-i18n="apiHelpStep4">Вставте ключ сюди та збережіть налаштування.</li>
+      </ol>
+      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" data-i18n="apiHelpOpen">Відкрити Google AI Studio</a>
+      <div class="api-warning" data-i18n="apiHelpWarning">Не передавайте API-ключ іншим і не публікуйте його в інтернеті.</div>
+    </details>
+    <label for="system-instruction" data-i18n="systemInstruction">Системна інструкція</label>
+    <textarea id="system-instruction" spellcheck="false"></textarea>
+  </section>
+  <section class="section">
+    <div class="section-title" data-i18n="automation">Автоматизація</div>
+    <label for="capture-mode" data-i18n="workMode">Режим роботи</label>
+    <div class="mode-switch" role="group" aria-label="Режим роботи">
+      <button id="manual-mode" class="mode-button" type="button" data-mode="manual" data-i18n="manualShort">Ручний</button>
+      <button id="automatic-mode" class="mode-button" type="button" data-mode="automatic" data-i18n="automaticShort">Автоматичний</button>
+    </div>
+    <select id="capture-mode" hidden aria-hidden="true">
+      <option value="manual">manual</option>
+      <option value="automatic">automatic</option>
+    </select>
+    <div id="interval-field" class="interval-field">
+      <label for="capture-interval" data-i18n="interval">Інтервал скриншота, секунд</label>
+      <input id="capture-interval" type="number" min="20" max="86400" step="1" value="60">
+    </div>
+  </section>
+  <section class="section">
+    <div class="section-title" data-i18n="response">Відповідь</div>
+    <label for="opacity" data-i18n="opacity">Прозорість тексту</label>
+    <div class="range-row"><input id="opacity" type="range" min="0.1" max="1" step="0.05"><span id="opacity-value">0.45</span></div>
+  </section>
+  <section class="section">
+    <div class="section-title" data-i18n="controls">Керування</div>
+    <label for="shortcut" data-i18n="shortcut">Гаряча клавіша</label>
+    <input id="shortcut" type="text" autocomplete="off" spellcheck="false" placeholder="Ctrl+Shift+Q" data-i18n-placeholder="shortcutPlaceholder">
+    <small data-i18n="shortcutHelp">Ручне введення. Приклади: Ctrl+Shift+Q, Alt+Shift+A, Ctrl+Alt+P або F2.</small>
+    <button id="apply-shortcut" class="secondary" type="button" data-i18n="applyShortcut">Застосувати гарячу клавішу</button>
+  </section>
+  <button id="save" type="button" data-i18n="save">Зберегти налаштування</button>
+    <button id="shortcut-settings" class="secondary" type="button" data-i18n="shortcutSettings">Перейти до налаштувань</button>
+  <div id="status" role="status" aria-live="polite"></div>
+  <script src="popup.js"></script>
+</body>
+</html>
