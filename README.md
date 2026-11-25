@@ -76,4 +76,6 @@ Screenshots are sent to the Google Gemini API only when an analysis is started. 
 
 ## License
 
-No license has been specified yet.
+ExamPasser is distributed under the [ExamPasser Personal Use License](LICENSE.md).
+
+Personal, non-commercial use of the unmodified extension is allowed. Copying, modifying, redistributing, selling, or publishing the extension requires prior written permission from the copyright holder.
