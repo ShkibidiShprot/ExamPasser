@@ -32,16 +32,21 @@ jobs:
               zip -qr "ExamPasser-${browser}.zip" "ExamPasser-${browser}"
             )
           done
+          cp ExamPasser-Firefox-signed.xpi dist/ExamPasser-Firefox-signed.xpi
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ExamPasser-browser-packages
-          path: dist/*.zip
+          path: |
+            dist/*.zip
+            dist/ExamPasser-Firefox-signed.xpi
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: dist/*.zip
+          files: |
+            dist/*.zip
+            dist/ExamPasser-Firefox-signed.xpi

@@ -49,14 +49,11 @@ Keep the selected folder in place because the browser loads the extension direct
 
 ## Install on Firefox or Zen Browser
 
-For a ready-made package, download `ExamPasser-Firefox.zip` from the [Releases](https://github.com/AGraves2347/ExamPasser/releases) page. Firefox uses `manifest.firefox.json`; permanent installation requires a Mozilla-signed `.xpi` package.
+For a ready-made package, download `ExamPasser-Firefox-signed.xpi` from the [Releases](https://github.com/AGraves2347/ExamPasser/releases) page. This file is already signed by Mozilla and can be installed directly in Firefox or Zen Browser. `ExamPasser-Firefox.zip` contains the unpacked source package for development.
 
-1. Submit the Firefox version through the [Mozilla Add-on Developer Hub](https://addons.mozilla.org/developers/addon/submit/).
-2. Choose private distribution (**Unlisted**).
-3. Download the signed `.xpi` after review.
-4. Open `about:addons`.
-5. Select the gear menu → **Install Add-on From File**.
-6. Choose the `.xpi` file.
+1. Open `about:addons`.
+2. Select the gear menu → **Install Add-on From File**.
+3. Choose `ExamPasser-Firefox-signed.xpi`.
 
 ## Controls
 
