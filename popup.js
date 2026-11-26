@@ -258,14 +258,15 @@ function startSnow() {
 
 function appendSnowflakes(count) {
   const fragment = document.createDocumentFragment();
+  const snowDuration = 8.5;
   for (let index = 0; index < count; index += 1) {
     const flake = document.createElement("span");
     flake.className = "snowflake";
     flake.textContent = index % 5 === 0 ? "✦" : "❄";
     flake.style.left = `${Math.random() * 100}%`;
     flake.style.setProperty("--snow-drift", `${Math.round(Math.random() * 70 - 35)}px`);
-    flake.style.setProperty("--snow-duration", `${5 + Math.random() * 6}s`);
-    flake.style.setProperty("--snow-delay", `${Math.random() * 2.5}s`);
+    flake.style.setProperty("--snow-duration", `${snowDuration}s`);
+    flake.style.setProperty("--snow-delay", `${(index / count) * snowDuration}s`);
     flake.style.fontSize = `${8 + Math.random() * 8}px`;
     fragment.append(flake);
   }
