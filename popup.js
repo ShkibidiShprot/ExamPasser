@@ -74,7 +74,13 @@ systemInstructionLabel.addEventListener("keydown", (event) => {
 snowflakeTrigger.addEventListener("click", unlockWinterVibe);
 winterVibeInput.addEventListener("change", () => {
   if (winterVibeInput.checked) startSnow();
-  else drainSnow();
+  else {
+    winterVibeRow.hidden = true;
+    snowflakeTrigger.hidden = true;
+    snowflakeRevealed = false;
+    systemInstructionLabel.setAttribute("aria-expanded", "false");
+    drainSnow();
+  }
   void chrome.storage.local.set({ winterVibe: winterVibeInput.checked });
 });
 captureModeInput.addEventListener("change", updateCaptureModeState);
@@ -243,7 +249,7 @@ function startSnow() {
     flake.style.left = `${Math.random() * 100}%`;
     flake.style.setProperty("--snow-drift", `${Math.round(Math.random() * 70 - 35)}px`);
     flake.style.setProperty("--snow-duration", `${5 + Math.random() * 6}s`);
-    flake.style.setProperty("--snow-delay", `${Math.random() * -8}s`);
+    flake.style.setProperty("--snow-delay", `${Math.random() * 2.5}s`);
     flake.style.fontSize = `${8 + Math.random() * 8}px`;
     fragment.append(flake);
   }
