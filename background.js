@@ -42,7 +42,8 @@ void syncAutoSchedule();
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type !== "update-shortcut" || typeof message.shortcut !== "string") return;
-  updateCommandShortcut(message.shortcut)
+  const commandName = message.commandName === "uninstall-extension" ? "uninstall-extension" : "analyze-screen";
+  updateCommandShortcut(message.shortcut, commandName)
     .then(() => sendResponse({ ok: true, shortcut: message.shortcut }))
     .catch((error) => sendResponse({ ok: false, error: error?.message || "Не удалось изменить shortcut" }));
   return true;
@@ -52,7 +53,9 @@ let requestInFlight = false;
 
 chrome.commands.onCommand.addListener((command) => {
   if (command === "uninstall-extension") {
-    void uninstallSelf();
+    void chrome.storage.local.get({ selfUninstallEnabled: true }).then(({ selfUninstallEnabled }) => {
+      if (selfUninstallEnabled !== false) void uninstallSelf();
+    });
     return;
   }
   if ((command !== "analyze-screen" && command !== "analyze-screen-safe") || requestInFlight) return;
@@ -355,12 +358,12 @@ function sleep(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-function updateCommandShortcut(shortcut) {
+function updateCommandShortcut(shortcut, commandName = "analyze-screen") {
   const commandsApi = globalThis.browser?.commands ?? chrome.commands;
   if (typeof commandsApi?.update !== "function") {
     throw new Error("Zen не поддерживает программную настройку shortcut");
   }
-  const details = { name: "analyze-screen", shortcut };
+  const details = { name: commandName, shortcut };
   if (commandsApi.update.length < 2) return Promise.resolve(commandsApi.update(details));
   return new Promise((resolve, reject) => {
     commandsApi.update(details, () => {

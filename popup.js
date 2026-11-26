@@ -22,6 +22,9 @@ Object.assign(TRANSLATIONS.en, { winterVibe: "Winter vibe mode", snowflakeHint: 
 Object.assign(TRANSLATIONS.uk, { apiKeyPlaceholder: "Тут введіть ваш API-ключ..." });
 Object.assign(TRANSLATIONS.ru, { apiKeyPlaceholder: "Введите здесь ваш API-ключ..." });
 Object.assign(TRANSLATIONS.en, { apiKeyPlaceholder: "Enter your API key here..." });
+Object.assign(TRANSLATIONS.uk, { selfUninstallEnabled: "Увімкнути самовидалення", selfUninstallShortcut: "Гаряча клавіша видалення", selfUninstallPlaceholder: "Alt+Shift+K", selfUninstallHelp: "Після натискання розширення видалиться без підтвердження.", applyUninstallShortcut: "Застосувати клавішу видалення" });
+Object.assign(TRANSLATIONS.ru, { selfUninstallEnabled: "Включить самоудаление", selfUninstallShortcut: "Горячая клавиша удаления", selfUninstallPlaceholder: "Alt+Shift+K", selfUninstallHelp: "После нажатия расширение удалится без подтверждения.", applyUninstallShortcut: "Применить клавишу удаления" });
+Object.assign(TRANSLATIONS.en, { selfUninstallEnabled: "Enable self-uninstall", selfUninstallShortcut: "Uninstall shortcut", selfUninstallPlaceholder: "Alt+Shift+K", selfUninstallHelp: "Pressing it will uninstall the extension without confirmation.", applyUninstallShortcut: "Apply uninstall shortcut" });
 const apiKeyInput = document.getElementById("api-key");
 const hideApiKeyInput = document.getElementById("hide-api-key");
 const instructionInput = document.getElementById("system-instruction");
@@ -35,6 +38,9 @@ const opacityInput = document.getElementById("opacity");
 const opacityValue = document.getElementById("opacity-value");
 const shortcutInput = document.getElementById("shortcut");
 const applyShortcutButton = document.getElementById("apply-shortcut");
+const selfUninstallEnabledInput = document.getElementById("self-uninstall-enabled");
+const uninstallShortcutInput = document.getElementById("uninstall-shortcut");
+const applyUninstallShortcutButton = document.getElementById("apply-uninstall-shortcut");
 const saveButton = document.getElementById("save");
 const shortcutSettingsButton = document.getElementById("shortcut-settings");
 const languageInput = document.getElementById("language");
@@ -96,7 +102,7 @@ modeButtons.forEach((button) => button.addEventListener("click", () => {
 saveButton.addEventListener("click", async () => {
   saveButton.disabled = true;
   try {
-    await chrome.storage.local.set({ apiKey: apiKeyInput.value.trim(), apiKeyHidden: hideApiKeyInput.checked, language: languageInput.value === "en" ? "en" : languageInput.value === "ru" ? "ru" : DEFAULT_LANGUAGE, systemInstruction: instructionInput.value.trim() || DEFAULT_SYSTEM_INSTRUCTION, captureMode: captureModeInput.value === "automatic" ? "automatic" : "manual", captureIntervalSeconds: normalizeInterval(captureIntervalInput.value), modelMode: "fast", precisionMode: precisionModeInput.value === "precision" ? "precision" : "fast", includeSelectionHint: selectionHintInput.checked, opacity: normalizeOpacity(opacityInput.value), winterVibe: winterVibeInput.checked });
+    await chrome.storage.local.set({ apiKey: apiKeyInput.value.trim(), apiKeyHidden: hideApiKeyInput.checked, language: languageInput.value === "en" ? "en" : languageInput.value === "ru" ? "ru" : DEFAULT_LANGUAGE, systemInstruction: instructionInput.value.trim() || DEFAULT_SYSTEM_INSTRUCTION, captureMode: captureModeInput.value === "automatic" ? "automatic" : "manual", captureIntervalSeconds: normalizeInterval(captureIntervalInput.value), modelMode: "fast", precisionMode: precisionModeInput.value === "precision" ? "precision" : "fast", includeSelectionHint: selectionHintInput.checked, opacity: normalizeOpacity(opacityInput.value), winterVibe: winterVibeInput.checked, selfUninstallEnabled: selfUninstallEnabledInput.checked });
     showButtonSuccess(saveButton);
     status.textContent = t("saved");
     setTimeout(() => { status.textContent = ""; }, 1600);
@@ -113,6 +119,8 @@ shortcutSettingsButton.addEventListener("click", async () => {
 });
 
 applyShortcutButton.addEventListener("click", () => void applyShortcut(shortcutInput.value));
+applyUninstallShortcutButton.addEventListener("click", () => void applyShortcut(uninstallShortcutInput.value, "uninstall-extension", applyUninstallShortcutButton));
+selfUninstallEnabledInput.addEventListener("change", () => void chrome.storage.local.set({ selfUninstallEnabled: selfUninstallEnabledInput.checked }));
 shortcutInput.addEventListener("keydown", (event) => {
   const capturedShortcut = getShortcutFromEvent(event);
   if (capturedShortcut) { event.preventDefault(); shortcutInput.value = capturedShortcut; status.textContent = t("shortcutHint"); return; }
@@ -120,6 +128,11 @@ shortcutInput.addEventListener("keydown", (event) => {
 });
 shortcutInput.addEventListener("focus", () => { isCapturingShortcut = true; status.textContent = t("shortcutHint"); });
 shortcutInput.addEventListener("blur", () => { isCapturingShortcut = false; });
+uninstallShortcutInput.addEventListener("keydown", (event) => {
+  const capturedShortcut = getShortcutFromEvent(event);
+  if (capturedShortcut) { event.preventDefault(); uninstallShortcutInput.value = capturedShortcut; status.textContent = t("shortcutHint"); return; }
+  if (event.key === "Enter") { event.preventDefault(); void applyShortcut(uninstallShortcutInput.value, "uninstall-extension", applyUninstallShortcutButton); }
+});
 document.addEventListener("keydown", (event) => {
   if (!isCapturingShortcut) return;
   const capturedShortcut = getShortcutFromEvent(event);
@@ -127,19 +140,20 @@ document.addEventListener("keydown", (event) => {
   event.preventDefault(); event.stopPropagation(); shortcutInput.value = capturedShortcut; status.textContent = t("shortcutHint");
 }, true);
 
-async function applyShortcut(value) {
+async function applyShortcut(value, commandName = "analyze-screen", button = applyShortcutButton) {
   const shortcut = normalizeShortcut(value);
   if (!shortcut) { status.textContent = t("shortcutFormat"); return; }
   try {
-    const result = await chrome.runtime.sendMessage({ type: "update-shortcut", shortcut });
+    const result = await chrome.runtime.sendMessage({ type: "update-shortcut", commandName, shortcut });
     if (!result?.ok) throw new Error(result?.error || t("shortcutFormat"));
-    shortcutInput.value = shortcut; showButtonSuccess(applyShortcutButton); status.textContent = t("shortcutApplied");
+    const targetInput = commandName === "uninstall-extension" ? uninstallShortcutInput : shortcutInput;
+    targetInput.value = shortcut; showButtonSuccess(button); status.textContent = t("shortcutApplied");
   } catch (error) { console.error("ExamPasser shortcut update failed:", error); status.textContent = error?.message || t("shortcutFormat"); }
 }
 
 async function loadSettings() {
   try {
-    const settings = await chrome.storage.local.get({ apiKey: "", apiKeyHidden: false, language: DEFAULT_LANGUAGE, systemInstruction: DEFAULT_SYSTEM_INSTRUCTION, captureMode: "manual", captureIntervalSeconds: 60, modelMode: "fast", precisionMode: "fast", includeSelectionHint: false, opacity: DEFAULT_OPACITY, winterVibe: false });
+    const settings = await chrome.storage.local.get({ apiKey: "", apiKeyHidden: false, language: DEFAULT_LANGUAGE, systemInstruction: DEFAULT_SYSTEM_INSTRUCTION, captureMode: "manual", captureIntervalSeconds: 60, modelMode: "fast", precisionMode: "fast", includeSelectionHint: false, opacity: DEFAULT_OPACITY, winterVibe: false, selfUninstallEnabled: true });
     apiKeyInput.value = typeof settings.apiKey === "string" ? settings.apiKey : "";
     hideApiKeyInput.checked = settings.apiKeyHidden === true;
     apiKeyInput.type = hideApiKeyInput.checked ? "password" : "text";
@@ -153,12 +167,13 @@ async function loadSettings() {
     selectionHintInput.checked = settings.includeSelectionHint === true;
     opacityInput.value = String(normalizeOpacity(settings.opacity)); opacityValue.textContent = Number(opacityInput.value).toFixed(2);
     winterVibeInput.checked = settings.winterVibe === true;
+    selfUninstallEnabledInput.checked = settings.selfUninstallEnabled !== false;
     renderSnow();
   } catch { status.textContent = t("loadError"); }
 }
 
 async function loadShortcut() {
-  try { const commands = await commandsApi.getAll(); const command = commands.find(({ name }) => name === "analyze-screen"); shortcutInput.value = command?.shortcut || t("notAssigned"); }
+  try { const commands = await commandsApi.getAll(); const command = commands.find(({ name }) => name === "analyze-screen"); const uninstallCommand = commands.find(({ name }) => name === "uninstall-extension"); shortcutInput.value = command?.shortcut || t("notAssigned"); uninstallShortcutInput.value = uninstallCommand?.shortcut || "Alt+Shift+K"; }
   catch { shortcutInput.value = "Alt+Q"; }
 }
 
