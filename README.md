@@ -31,18 +31,25 @@ Never publish or share your API key. Each user should use their own key.
 
 ## Install on Chrome or Opera GX
 
-1. Clone or download this repository.
-2. Open `chrome://extensions` in Chrome or `opera://extensions` in Opera GX.
-3. Enable **Developer mode**.
-4. Click **Load unpacked**.
-5. Select the project root containing `manifest.json`.
+For a ready-made package, open the [Releases](https://github.com/AGraves2347/ExamPasser/releases) page and download:
+
+- `ExamPasser-Chrome.zip` for Chrome;
+- `ExamPasser-Opera.zip` for Opera GX.
+
+To install an unpacked version:
+
+1. Download or clone this repository.
+2. Copy `manifest.chrome.json` to a new folder as `manifest.json` for Chrome, or copy `manifest.opera.json` as `manifest.json` for Opera GX.
+3. Open `chrome://extensions` in Chrome or `opera://extensions` in Opera GX.
+4. Enable **Developer mode**.
+5. Click **Load unpacked** and select the prepared folder.
 6. Pin ExamPasser to the browser toolbar.
 
 Keep the selected folder in place because the browser loads the extension directly from it.
 
 ## Install on Firefox or Zen Browser
 
-Firefox uses `manifest.firefox.json`. Permanent installation requires a Mozilla-signed `.xpi` package.
+For a ready-made package, download `ExamPasser-Firefox.zip` from the [Releases](https://github.com/AGraves2347/ExamPasser/releases) page. Firefox uses `manifest.firefox.json`; permanent installation requires a Mozilla-signed `.xpi` package.
 
 1. Submit the Firefox version through the [Mozilla Add-on Developer Hub](https://addons.mozilla.org/developers/addon/submit/).
 2. Choose private distribution (**Unlisted**).

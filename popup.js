@@ -1,5 +1,5 @@
 const DEFAULT_SYSTEM_INSTRUCTION =
-  "Ответь на вопрос. Дай максимально короткий ответ. Каждый раз присматривайся к оформлению задачь, ведь они могут быть с двойным или более ответом. Только букву/вариант ответа без самого решения, только ответ. Иначе, если в варианте ответа есть 2 и более ответов, пиши сразу все ответы через запятую, а не только один. Если на картинке нету варианта ответа, то номеруй его сам от 1 и до скольки хочешь. Даже если очень хочется НИКОГДА не отправляй больше чем просто ответ одной или больше буквами.Если ты видишь не тесты или что-то другое, то отправляй только \"!\". ЗАПОМНИ НИКОГДА никогда нельзя отправлять ничего кроме ответа на тесты.";
+  "Ответь на вопрос правильно и максимально коротко. Сначала определи, является ли изображение тестом. Если это не тест или случайный скриншот, верни только !. Если варианты ответа представлены только текстом и не имеют букв или номеров, обязательно пронумеруй их сверху вниз как 1, 2, 3 и так далее; никогда не возвращай текст варианта вместо его номера. Радиокнопки обычно означают один ответ, checkbox и формулировки \"выберите несколько\", \"все подходящие\" и аналогичные признаки означают несколько ответов. Сложность вопроса сама по себе не означает несколько ответов. Внимательно проверь отрицания, слова \"не\", \"кроме\", \"неверно\", \"все, кроме\", а также формулы и мелкий текст. Верни только буквы или номера правильных вариантов через запятую, без решения и объяснений.";
 const DEFAULT_OPACITY = 0.45;
 const DEFAULT_LANGUAGE = "uk";
 const TRANSLATIONS = {
@@ -13,6 +13,9 @@ const TRANSLATIONS = {
     tagline: "The fastest screenshots — honestly!!!)", connection: "Connection", apiKey: "Gemini API Key", hideApiKey: "Hide API key", apiHelpTitle: "How to get an API key?", apiHelpStep1: "Sign in to your Google account.", apiHelpStep2: "Open Google AI Studio and the API keys section.", apiHelpStep3: "Click Create API key and copy the key.", apiHelpStep4: "Paste the key here and save the settings.", apiHelpOpen: "Open Google AI Studio", apiHelpWarning: "Do not share your API key or publish it online.", systemInstruction: "System instruction", automation: "Automation", workMode: "Working mode", manualShort: "Manual", automaticShort: "Automatic", manualMode: "Manual — with a shortcut", automaticMode: "Automatic — by interval", interval: "Screenshot interval, seconds", response: "Response", opacity: "Text opacity", controls: "Controls", shortcut: "Keyboard shortcut", shortcutPlaceholder: "Ctrl+Shift+Q", shortcutHelp: "Manual input. Examples: Ctrl+Shift+Q, Alt+Shift+A, Ctrl+Alt+P or F2.", applyShortcut: "Apply keyboard shortcut", save: "Save settings", shortcutSettings: "Open settings", saved: "Saved", saveError: "Save error", shortcutHint: "Press Ctrl/Alt + a key", shortcutFormat: "Format: Ctrl+Shift+Q or F2", shortcutApplied: "Keyboard shortcut applied", shortcutFallback: "Open about:addons → Manage Extension Shortcuts", loadError: "Could not load settings", notAssigned: "Not assigned"
   }
 };
+Object.assign(TRANSLATIONS.uk, { precisionMode: "Точність аналізу", fastPrecision: "Швидкий режим", precisionPrecision: "Точний режим", selectionHint: "Використовувати виділений текст як підказку" });
+Object.assign(TRANSLATIONS.ru, { precisionMode: "Точность анализа", fastPrecision: "Быстрый режим", precisionPrecision: "Точный режим", selectionHint: "Использовать выделенный текст как подсказку" });
+Object.assign(TRANSLATIONS.en, { precisionMode: "Analysis accuracy", fastPrecision: "Fast mode", precisionPrecision: "Precision mode", selectionHint: "Use selected text as a hint" });
 const apiKeyInput = document.getElementById("api-key");
 const hideApiKeyInput = document.getElementById("hide-api-key");
 const instructionInput = document.getElementById("system-instruction");
@@ -20,6 +23,8 @@ const captureModeInput = document.getElementById("capture-mode");
 const captureIntervalInput = document.getElementById("capture-interval");
 const intervalField = document.getElementById("interval-field");
 const modeButtons = [...document.querySelectorAll(".mode-button")];
+const precisionModeInput = document.getElementById("precision-mode");
+const selectionHintInput = document.getElementById("selection-hint");
 const opacityInput = document.getElementById("opacity");
 const opacityValue = document.getElementById("opacity-value");
 const shortcutInput = document.getElementById("shortcut");
@@ -58,7 +63,7 @@ modeButtons.forEach((button) => button.addEventListener("click", () => {
 saveButton.addEventListener("click", async () => {
   saveButton.disabled = true;
   try {
-    await chrome.storage.local.set({ apiKey: apiKeyInput.value.trim(), apiKeyHidden: hideApiKeyInput.checked, language: languageInput.value === "en" ? "en" : languageInput.value === "ru" ? "ru" : DEFAULT_LANGUAGE, systemInstruction: instructionInput.value.trim() || DEFAULT_SYSTEM_INSTRUCTION, captureMode: captureModeInput.value === "automatic" ? "automatic" : "manual", captureIntervalSeconds: normalizeInterval(captureIntervalInput.value), modelMode: "fast", opacity: normalizeOpacity(opacityInput.value) });
+    await chrome.storage.local.set({ apiKey: apiKeyInput.value.trim(), apiKeyHidden: hideApiKeyInput.checked, language: languageInput.value === "en" ? "en" : languageInput.value === "ru" ? "ru" : DEFAULT_LANGUAGE, systemInstruction: instructionInput.value.trim() || DEFAULT_SYSTEM_INSTRUCTION, captureMode: captureModeInput.value === "automatic" ? "automatic" : "manual", captureIntervalSeconds: normalizeInterval(captureIntervalInput.value), modelMode: "fast", precisionMode: precisionModeInput.value === "precision" ? "precision" : "fast", includeSelectionHint: selectionHintInput.checked, opacity: normalizeOpacity(opacityInput.value) });
     showButtonSuccess(saveButton);
     status.textContent = t("saved");
     setTimeout(() => { status.textContent = ""; }, 1600);
@@ -101,7 +106,7 @@ async function applyShortcut(value) {
 
 async function loadSettings() {
   try {
-    const settings = await chrome.storage.local.get({ apiKey: "", apiKeyHidden: false, language: DEFAULT_LANGUAGE, systemInstruction: DEFAULT_SYSTEM_INSTRUCTION, captureMode: "manual", captureIntervalSeconds: 60, modelMode: "fast", opacity: DEFAULT_OPACITY });
+    const settings = await chrome.storage.local.get({ apiKey: "", apiKeyHidden: false, language: DEFAULT_LANGUAGE, systemInstruction: DEFAULT_SYSTEM_INSTRUCTION, captureMode: "manual", captureIntervalSeconds: 60, modelMode: "fast", precisionMode: "fast", includeSelectionHint: false, opacity: DEFAULT_OPACITY });
     apiKeyInput.value = typeof settings.apiKey === "string" ? settings.apiKey : "";
     hideApiKeyInput.checked = settings.apiKeyHidden === true;
     apiKeyInput.type = hideApiKeyInput.checked ? "password" : "text";
@@ -111,6 +116,8 @@ async function loadSettings() {
     captureModeInput.value = settings.captureMode === "automatic" ? "automatic" : "manual";
     const savedInterval = (settings.captureIntervalSeconds ?? (Number(settings.captureIntervalMinutes) * 60)) || 60;
     captureIntervalInput.value = String(normalizeInterval(savedInterval)); updateCaptureModeState();
+    precisionModeInput.value = settings.precisionMode === "precision" ? "precision" : "fast";
+    selectionHintInput.checked = settings.includeSelectionHint === true;
     opacityInput.value = String(normalizeOpacity(settings.opacity)); opacityValue.textContent = Number(opacityInput.value).toFixed(2);
   } catch { status.textContent = t("loadError"); }
 }

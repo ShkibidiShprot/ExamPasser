@@ -1,0 +1,47 @@
+name: Build browser packages
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build browser archives
+        shell: bash
+        run: |
+          set -euo pipefail
+          common=(background.js content.js popup.html popup.js icon.svg icon-16.png icon-32.png icon-48.png icon-128.png)
+
+          for browser in chrome opera firefox; do
+            dir="dist/ExamPasser-${browser}"
+            mkdir -p "$dir"
+            cp "manifest.${browser}.json" "$dir/manifest.json"
+            cp "${common[@]}" "$dir/"
+            (
+              cd dist
+              zip -qr "ExamPasser-${browser}.zip" "ExamPasser-${browser}"
+            )
+          done
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExamPasser-browser-packages
+          path: dist/*.zip
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: dist/*.zip

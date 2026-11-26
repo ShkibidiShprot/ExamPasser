@@ -1,12 +1,20 @@
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
 const DEFAULT_SYSTEM_INSTRUCTION =
-  "Ответь на вопрос. Дай максимально короткий ответ. Каждый раз присматривайся к оформлению задачь, ведь они могут быть с двойным или более ответом. Только букву/вариант ответа без самого решения, только ответ. Иначе, если в варианте ответа есть 2 и более ответов, пиши сразу все ответы через запятую, а не только один. Если на картинке нету варианта ответа, то номеруй его сам от 1 и до скольки хочешь. Даже если очень хочется НИКОГДА не отправляй больше чем просто ответ одной или больше буквами.Если ты видишь не тесты или что-то другое, то отправляй только \"!\". ЗАПОМНИ НИКОГДА никогда нельзя отправлять ничего кроме ответа на тесты.";
-// Image understanding on the current Flash model can exceed 15 seconds,
-// especially on a free-tier project. Keep a bounded but usable deadline.
-const REQUEST_TIMEOUT_MS = 30_000;
+  "Ответь на вопрос правильно и максимально коротко. Сначала определи, является ли изображение тестом. Если это не тест или случайный скриншот, верни только !. Если варианты ответа представлены только текстом и не имеют букв или номеров, обязательно пронумеруй их сверху вниз как 1, 2, 3 и так далее; никогда не возвращай текст варианта вместо его номера. Радиокнопки обычно означают один ответ, checkbox и формулировки \"выберите несколько\", \"все подходящие\" и аналогичные признаки означают несколько ответов. Сложность вопроса сама по себе не означает несколько ответов. Внимательно проверь отрицания, слова \"не\", \"кроме\", \"неверно\", \"все, кроме\", а также формулы и мелкий текст. Верни только буквы или номера правильных вариантов через запятую, без решения и объяснений.";
+const REQUEST_TIMEOUT_MS = 10_000;
 const MAX_GEMINI_ATTEMPTS = 3;
 const RETRYABLE_HTTP_STATUSES = new Set([429, 500, 502, 503, 504]);
 const AUTO_CAPTURE_ALARM = "quickpeek-auto-capture";
+const ANALYSIS_SCHEMA = {
+  type: "object",
+  properties: {
+    taskType: { type: "string", enum: ["test", "non_test", "unclear"], description: "Whether the image contains a test question." },
+    selectionMode: { type: "string", enum: ["single", "multiple", "none", "unknown"], description: "Whether the UI permits one or multiple answers." },
+    answers: { type: "array", items: { type: "string" }, description: "Only answer labels or top-to-bottom option numbers. Never copy the full option text." },
+    confidence: { type: "string", enum: ["high", "medium", "low"] }
+  },
+  required: ["taskType", "selectionMode", "answers", "confidence"]
+};
 
 chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason !== "install") return;
@@ -97,7 +105,9 @@ async function analyzeActiveTab() {
     const settings = await chrome.storage.local.get({
       apiKey: "",
       systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
-      modelMode: "fast"
+      modelMode: "fast",
+      precisionMode: "fast",
+      includeSelectionHint: false
     });
     const apiKey = typeof settings.apiKey === "string" ? settings.apiKey.trim() : "";
     if (!apiKey) {
@@ -105,26 +115,67 @@ async function analyzeActiveTab() {
       return;
     }
 
-    const imageDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {
-      format: "jpeg",
-      quality: 80
-    });
-    const imageBase64 = imageDataUrl.replace(/^data:image\/jpeg;base64,/, "");
+    const precisionMode = settings.precisionMode === "precision" ? "precision" : "fast";
+    const imageFormat = precisionMode === "precision" ? "png" : "jpeg";
+    const selectionHint = settings.includeSelectionHint ? await getSelectionHint(tab.id) : "";
+    const optionHint = await getOptionHint(tab.id);
+    const captureOptions = { format: imageFormat };
+    if (imageFormat === "jpeg") captureOptions.quality = 90;
+    const imageDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, captureOptions);
+    const imageBase64 = imageDataUrl.replace(new RegExp(`^data:image/${imageFormat};base64,`), "");
     if (!imageBase64) throw new Error("Screenshot data is empty");
 
-    const text = await requestGemini({
-      apiKey,
-      imageBase64,
-      model: GEMINI_MODEL,
-      systemInstruction:
-        enforceCompactInstruction(settings.systemInstruction),
-    });
-    await sendMessage(tab.id, { type: "show-result", text });
+    let text;
+    try {
+      text = await requestGemini({
+        apiKey,
+        imageBase64,
+        mimeType: `image/${imageFormat}`,
+        model: GEMINI_MODEL,
+        precisionMode,
+        selectionHint,
+        optionHint,
+        structuredOutput: true,
+        systemInstruction: enforceCompactInstruction(settings.systemInstruction)
+      });
+    } catch (error) {
+      if (!/Gemini HTTP 400:/.test(error?.message ?? "")) throw error;
+      text = await requestGemini({
+        apiKey,
+        imageBase64,
+        mimeType: `image/${imageFormat}`,
+        model: GEMINI_MODEL,
+        precisionMode,
+        selectionHint,
+        optionHint,
+        structuredOutput: false,
+        systemInstruction: `${settings.systemInstruction || DEFAULT_SYSTEM_INSTRUCTION}\n\nВерни только номер или букву правильного варианта. Если варианты без номеров, пронумеруй их сверху вниз. Если это не тест, верни только !.`
+      });
+    }
+    await sendMessage(tab.id, { type: "show-result", text: formatAnalysisResult(text) });
   } catch (error) {
     console.warn("ExamPasser request failed:", error);
     if (tab?.id && !isUnsupportedUrl(tab.url)) {
       await sendMessage(tab.id, { type: "show-result", text: "?" });
     }
+  }
+}
+
+async function getSelectionHint(tabId) {
+  try {
+    const response = await chrome.tabs.sendMessage(tabId, { type: "get-selection" });
+    return typeof response?.text === "string" ? response.text.trim().slice(0, 4000) : "";
+  } catch {
+    return "";
+  }
+}
+
+async function getOptionHint(tabId) {
+  try {
+    const response = await chrome.tabs.sendMessage(tabId, { type: "get-test-options" });
+    return Array.isArray(response?.options) ? response.options.join("\n").slice(0, 6000) : "";
+  } catch {
+    return "";
   }
 }
 
@@ -146,7 +197,7 @@ function sendMessage(tabId, message) {
   return chrome.tabs.sendMessage(tabId, message).catch(() => undefined);
 }
 
-async function requestGemini({ apiKey, imageBase64, model, systemInstruction }) {
+async function requestGemini({ apiKey, imageBase64, mimeType, model, precisionMode, selectionHint, optionHint, structuredOutput, systemInstruction }) {
   for (let attempt = 1; attempt <= MAX_GEMINI_ATTEMPTS; attempt += 1) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -160,12 +211,17 @@ async function requestGemini({ apiKey, imageBase64, model, systemInstruction }) 
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: systemInstruction }] },
             generationConfig: {
-              maxOutputTokens: 16,
-              thinkingConfig: { thinkingLevel: "LOW" }
+              ...(structuredOutput ? { responseMimeType: "application/json", responseJsonSchema: ANALYSIS_SCHEMA } : {}),
+              maxOutputTokens: structuredOutput ? (precisionMode === "precision" ? 1536 : 1024) : 128,
+              thinkingConfig: { thinkingLevel: precisionMode === "precision" ? "MEDIUM" : "MINIMAL" }
             },
             contents: [{
               role: "user",
-              parts: [{ inline_data: { mime_type: "image/jpeg", data: imageBase64 } }]
+              parts: [
+                ...(optionHint ? [{ text: `Варіанти, зчитані зі сторінки та пронумеровані зверху вниз:\n${optionHint}` }] : []),
+                ...(selectionHint ? [{ text: `Текст, виділений користувачем для фокусу:\n${selectionHint}` }] : []),
+                { inline_data: { mime_type: mimeType, data: imageBase64 } }
+              ]
             }]
           })
         }
@@ -182,7 +238,7 @@ async function requestGemini({ apiKey, imageBase64, model, systemInstruction }) 
       const data = await response.json();
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (typeof text !== "string" || !text.trim()) throw new Error("Gemini returned no text");
-      return compactAnswer(text);
+      return parseAnalysis(text, optionHint);
     } catch (error) {
       if (attempt === MAX_GEMINI_ATTEMPTS || !isRetryableError(error)) throw error;
       await sleep(getRetryDelay(attempt));
@@ -193,18 +249,81 @@ async function requestGemini({ apiKey, imageBase64, model, systemInstruction }) 
   throw new Error("Gemini request exhausted all retry attempts");
 }
 
+function parseAnalysis(value, optionHint = "") {
+  try {
+    const parsed = JSON.parse(extractJsonObject(value));
+    return {
+      taskType: parsed?.taskType,
+      selectionMode: parsed?.selectionMode,
+      answers: Array.isArray(parsed?.answers) ? parsed.answers : [],
+      confidence: parsed?.confidence
+    };
+  } catch {
+    const answer = extractPlainAnswer(value, optionHint);
+    return { taskType: answer === "!" ? "non_test" : "unclear", selectionMode: "unknown", answers: answer === "!" ? [] : [answer], confidence: "low" };
+  }
+}
+
+function extractJsonObject(value) {
+  const text = String(value).trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace < 0 || lastBrace <= firstBrace) throw new Error("Gemini returned invalid structured output");
+  return text.slice(firstBrace, lastBrace + 1);
+}
+
+function formatAnalysisResult(result) {
+  if (!result || result.taskType === "non_test") return "!";
+  const answers = result.answers
+    .filter((answer) => typeof answer === "string" && answer.trim())
+    .map((answer) => answer.trim().replace(/\s+/g, " ").slice(0, 32));
+  if (answers.length === 0) return "?";
+  const text = answers.join(", ");
+  if (answers.every((answer) => answer === "?" || answer === "~")) return "?";
+  return result.confidence === "low" ? `~ ${text}` : text;
+}
+
 function compactAnswer(value) {
-  const firstLine = String(value).split(/\r?\n/).map((line) => line.trim()).find(Boolean) || "?";
-  return firstLine
+  return (String(value).split(/\r?\n/).map((line) => line.trim()).find(Boolean) || "?")
     .replace(/^(ответ|ответ правильный|правильный ответ)\s*[:\-]\s*/i, "")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 120) || "?";
 }
 
+function extractPlainAnswer(value, optionHint = "") {
+  const lines = String(value)
+    .replace(/```(?:json)?/gi, "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .reverse();
+  for (const line of lines) {
+    if (line === "!") return "!";
+    const normalized = line
+      .replace(/^(answer|ответ|final|итог|ответ:|ответ —)\s*/i, "")
+      .replace(/[.。]+$/, "")
+      .trim();
+    const normalizedOption = normalizeComparableText(normalized);
+    const matchedOption = optionHint
+      .split(/\r?\n/)
+      .map((option) => option.match(/^(\d+)\.\s*(.+)$/))
+      .find((match) => match && normalizeComparableText(match[2]) === normalizedOption);
+    if (matchedOption) return matchedOption[1];
+    if (/^[A-Za-zА-Яа-яЁё0-9]+(?:\s*,\s*[A-Za-zА-Яа-яЁё0-9]+)*$/.test(normalized)) {
+      return normalized.slice(0, 120);
+    }
+  }
+  return "?";
+}
+
+function normalizeComparableText(value) {
+  return String(value).toLowerCase().replace(/[.!?。]+$/g, "").replace(/\s+/g, " ").trim();
+}
+
 function enforceCompactInstruction(value) {
   const instruction = typeof value === "string" && value.trim() ? value.trim() : DEFAULT_SYSTEM_INSTRUCTION;
-  return `${instruction}\n\nКРИТИЧЕСКОЕ ПРАВИЛО ФОРМАТА: верни только букву или номера вариантов через запятую. Без решения, объяснений, рассуждений и вводных слов. Максимум одна короткая строка.`;
+  return `${instruction}\n\nКРИТИЧЕСКОЕ ПРАВИЛО ФОРМАТА: верни только JSON по заданной схеме. Не добавляй reasoning, объяснения или текст вне JSON. Если это не тест, taskType должен быть non_test, а answers — пустым массивом. Если передан список вариантов со страницы, используй его для сопоставления ответа и номера. Если варианты на экране не подписаны буквами или цифрами, answers обязан содержать их порядковые номера сверху вниз, а не текст вариантов.`;
 }
 
 function isRetryableError(error) {

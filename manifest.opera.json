@@ -1,17 +1,17 @@
 {
   "manifest_version": 3,
   "name": "ExamPasser",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Analyze the visible area of the current tab with Gemini.",
   "permissions": ["activeTab", "storage", "scripting", "alarms"],
   "host_permissions": ["<all_urls>", "https://generativelanguage.googleapis.com/*"],
   "background": { "service_worker": "background.js", "type": "module" },
   "action": {
     "default_title": "ExamPasser",
-    "default_icon": { "16": "icon.svg", "32": "icon.svg", "48": "icon.svg" },
+    "default_icon": { "16": "icon-16.png", "32": "icon-32.png", "48": "icon-48.png" },
     "default_popup": "popup.html"
   },
-  "icons": { "16": "icon.svg", "32": "icon.svg", "48": "icon.svg", "128": "icon.svg" },
+  "icons": { "16": "icon-16.png", "32": "icon-32.png", "48": "icon-48.png", "128": "icon-128.png" },
   "commands": {
     "analyze-screen": { "suggested_key": { "default": "Alt+Q" }, "description": "Анализировать область экрана" },
     "analyze-screen-safe": { "suggested_key": { "default": "Alt+Shift+Q" }, "description": "Анализировать область экрана (альтернативная клавиша)" }

@@ -101,6 +101,12 @@
   </section>
   <section class="section">
     <div class="section-title" data-i18n="response">Відповідь</div>
+    <label for="precision-mode" data-i18n="precisionMode">Точність аналізу</label>
+    <select id="precision-mode">
+      <option value="fast" data-i18n="fastPrecision">Швидкий режим</option>
+      <option value="precision" data-i18n="precisionPrecision">Точний режим</option>
+    </select>
+    <label class="checkbox-row"><input id="selection-hint" type="checkbox"><span data-i18n="selectionHint">Використовувати виділений текст як підказку</span></label>
     <label for="opacity" data-i18n="opacity">Прозорість тексту</label>
     <div class="range-row"><input id="opacity" type="range" min="0.1" max="1" step="0.05"><span id="opacity-value">0.45</span></div>
   </section>

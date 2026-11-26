@@ -14,6 +14,14 @@
       sendResponse({ ok: true });
       return;
     }
+    if (message?.type === "get-selection") {
+      sendResponse({ text: window.getSelection()?.toString() || "" });
+      return;
+    }
+    if (message?.type === "get-test-options") {
+      sendResponse({ options: collectTestOptions() });
+      return;
+    }
     if (message?.type === "show-loading") showLoading();
     if (message?.type === "show-result") showResult(message.text);
   });
@@ -77,5 +85,27 @@
         label = null;
       }, 240);
     }, 5000);
+  }
+
+  function collectTestOptions() {
+    const elements = [...document.querySelectorAll(
+      'input[type="radio"], input[type="checkbox"], [role="radio"], [role="checkbox"]'
+    )].filter((element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    });
+    const options = [];
+    const seen = new Set();
+    for (const element of elements) {
+      const label = element.labels?.[0] || element.closest("label");
+      const text = (label?.innerText || element.parentElement?.innerText || "")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!text || seen.has(text)) continue;
+      seen.add(text);
+      options.push(`${options.length + 1}. ${text.slice(0, 500)}`);
+      if (options.length >= 20) break;
+    }
+    return options;
   }
 })();
