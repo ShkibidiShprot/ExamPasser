@@ -31,25 +31,29 @@ ExamPasser робить скриншот поточної вкладки вру�
 
 ## Встановлення у Chrome або Opera GX
 
-1. Клонуй або завантаж цей репозиторій.
-2. Відкрий `chrome://extensions` у Chrome або `opera://extensions` в Opera GX.
-3. Увімкни **Developer mode**.
-4. Натисни **Load unpacked**.
-5. Вибери кореневу папку з `manifest.json`.
+Готові архіви можна завантажити зі сторінки [Releases](https://github.com/AGraves2347/ExamPasser/releases):
+
+- `ExamPasser-Chrome.zip` — для Chrome;
+- `ExamPasser-Opera.zip` — для Opera GX.
+
+Для встановлення розпакованої версії:
+
+1. Завантаж або клонуй цей репозиторій.
+2. Скопіюй `manifest.chrome.json` у нову папку як `manifest.json` для Chrome або `manifest.opera.json` як `manifest.json` для Opera GX.
+3. Відкрий `chrome://extensions` у Chrome або `opera://extensions` в Opera GX.
+4. Увімкни **Developer mode**.
+5. Натисни **Load unpacked** і вибери підготовлену папку.
 6. Закріпи ExamPasser на панелі браузера.
 
 Не переміщуй і не видаляй вибрану папку.
 
 ## Встановлення у Firefox або Zen Browser
 
-Для Firefox використовується `manifest.firefox.json`. Для постійного встановлення потрібен підписаний Mozilla файл `.xpi`.
+Завантаж `ExamPasser-Firefox-signed.xpi` зі сторінки [Releases](https://github.com/AGraves2347/ExamPasser/releases). Файл уже підписаний Mozilla і встановлюється без повторної перевірки. `ExamPasser-Firefox.zip` призначений для розроблення.
 
-1. Відправ Firefox-версію через [Mozilla Add-on Developer Hub](https://addons.mozilla.org/developers/addon/submit/).
-2. Обери непублічне розповсюдження (**Unlisted**).
-3. Після перевірки завантаж підписаний `.xpi`.
-4. Відкрий `about:addons`.
-5. Натисни шестерню → **Install Add-on From File**.
-6. Вибери `.xpi`.
+1. Відкрий `about:addons`.
+2. Натисни шестерню → **Install Add-on From File**.
+3. Вибери `ExamPasser-Firefox-signed.xpi`.
 
 ## Керування
 
