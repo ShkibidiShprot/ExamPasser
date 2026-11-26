@@ -52,6 +52,20 @@
     button.secondary:active, button.secondary.pressed { color: #fff; background: linear-gradient(135deg, #35c878, #19a968); border-color: #57e39a; box-shadow: 0 0 0 2px #57e39a33, 0 7px 18px #23bd7544; }
     button.success { color: #fff; background: linear-gradient(135deg, #35c878, #19a968); border-color: #57e39a; box-shadow: 0 0 0 2px #57e39a33, 0 7px 18px #23bd7544; }
     #status { min-height: 15px; margin-top: 9px; color: #7ee2b8; text-align: center; font-size: 11px; }
+    .instruction-label-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .instruction-label-row label { flex: 1; margin-bottom: 5px; }
+    .snowflake-trigger { width: 26px; height: 26px; margin: 0 0 5px; padding: 0; border: 1px solid #8fdcff66; border-radius: 50%; color: #dff8ff; background: #4daeff33; box-shadow: 0 0 14px #62dfff66; font-size: 16px; line-height: 1; }
+    .snowflake-trigger:hover { filter: brightness(1.2); transform: rotate(12deg) scale(1.08); }
+    .snowflake-trigger:active { background: #35c878; }
+    #system-instruction-label { cursor: pointer; }
+    #system-instruction-label:focus-visible { outline: 2px solid #72d9ff; outline-offset: 3px; border-radius: 3px; }
+    .winter-vibe-row { margin-top: 8px; color: #dff8ff; }
+    .winter-vibe-row input { accent-color: #50cfff; }
+    .snow-layer { position: fixed; inset: 0; z-index: 20; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity .35s ease; }
+    .snow-layer.active { opacity: 1; }
+    .snowflake { position: absolute; top: -24px; left: 0; color: #f4fcff; text-shadow: 0 0 8px #a9edff; font-size: 12px; line-height: 1; animation: snow-fall var(--snow-duration) linear var(--snow-delay) infinite; }
+    @keyframes snow-fall { from { transform: translate3d(0, -24px, 0) rotate(0deg); } to { transform: translate3d(var(--snow-drift), 390px, 0) rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .snowflake { animation-duration: 8s; } }
   </style>
 </head>
 <body>
@@ -80,8 +94,15 @@
       <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" data-i18n="apiHelpOpen">Відкрити Google AI Studio</a>
       <div class="api-warning" data-i18n="apiHelpWarning">Не передавайте API-ключ іншим і не публікуйте його в інтернеті.</div>
     </details>
-    <label for="system-instruction" data-i18n="systemInstruction">Системна інструкція</label>
+    <div class="instruction-label-row">
+      <label id="system-instruction-label" for="system-instruction" role="button" tabindex="0" aria-expanded="false" data-i18n="systemInstruction">Системна інструкція</label>
+      <button id="snowflake-trigger" class="snowflake-trigger" type="button" hidden aria-label="Відкрити режим зимового вайбу" title="Відкрити режим зимового вайбу">❄</button>
+    </div>
     <textarea id="system-instruction" spellcheck="false"></textarea>
+    <label id="winter-vibe-row" class="checkbox-row winter-vibe-row" hidden>
+      <input id="winter-vibe" type="checkbox">
+      <span data-i18n="winterVibe">Режим зимового вайбу</span>
+    </label>
   </section>
   <section class="section">
     <div class="section-title" data-i18n="automation">Автоматизація</div>
@@ -120,6 +141,7 @@
   <button id="save" type="button" data-i18n="save">Зберегти налаштування</button>
     <button id="shortcut-settings" class="secondary" type="button" data-i18n="shortcutSettings">Перейти до налаштувань</button>
   <div id="status" role="status" aria-live="polite"></div>
+  <div id="snow-layer" class="snow-layer" aria-hidden="true"></div>
   <script src="popup.js"></script>
 </body>
 </html>

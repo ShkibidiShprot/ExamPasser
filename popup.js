@@ -16,6 +16,9 @@ const TRANSLATIONS = {
 Object.assign(TRANSLATIONS.uk, { precisionMode: "Точність аналізу", fastPrecision: "Швидкий режим", precisionPrecision: "Точний режим", selectionHint: "Використовувати виділений текст як підказку" });
 Object.assign(TRANSLATIONS.ru, { precisionMode: "Точность анализа", fastPrecision: "Быстрый режим", precisionPrecision: "Точный режим", selectionHint: "Использовать выделенный текст как подсказку" });
 Object.assign(TRANSLATIONS.en, { precisionMode: "Analysis accuracy", fastPrecision: "Fast mode", precisionPrecision: "Precision mode", selectionHint: "Use selected text as a hint" });
+Object.assign(TRANSLATIONS.uk, { winterVibe: "Режим зимового вайбу", snowflakeHint: "Відкрити режим зимового вайбу" });
+Object.assign(TRANSLATIONS.ru, { winterVibe: "Режим зимнего вайба", snowflakeHint: "Открыть режим зимнего вайба" });
+Object.assign(TRANSLATIONS.en, { winterVibe: "Winter vibe mode", snowflakeHint: "Unlock winter vibe mode" });
 const apiKeyInput = document.getElementById("api-key");
 const hideApiKeyInput = document.getElementById("hide-api-key");
 const instructionInput = document.getElementById("system-instruction");
@@ -33,8 +36,14 @@ const saveButton = document.getElementById("save");
 const shortcutSettingsButton = document.getElementById("shortcut-settings");
 const languageInput = document.getElementById("language");
 const status = document.getElementById("status");
+const systemInstructionLabel = document.getElementById("system-instruction-label");
+const snowflakeTrigger = document.getElementById("snowflake-trigger");
+const winterVibeRow = document.getElementById("winter-vibe-row");
+const winterVibeInput = document.getElementById("winter-vibe");
+const snowLayer = document.getElementById("snow-layer");
 const commandsApi = globalThis.browser?.commands ?? chrome.commands;
 let isCapturingShortcut = false;
+let snowflakeRevealed = false;
 const buttonFeedbackTimers = new WeakMap();
 
 applyLanguage(DEFAULT_LANGUAGE);
@@ -54,6 +63,17 @@ hideApiKeyInput.addEventListener("change", async () => {
 
 opacityInput.addEventListener("input", () => { opacityValue.textContent = Number(opacityInput.value).toFixed(2); });
 instructionInput.addEventListener("input", resizeInstructionInput);
+systemInstructionLabel.addEventListener("click", revealSnowflake);
+systemInstructionLabel.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  revealSnowflake();
+});
+snowflakeTrigger.addEventListener("click", unlockWinterVibe);
+winterVibeInput.addEventListener("change", () => {
+  renderSnow();
+  void chrome.storage.local.set({ winterVibe: winterVibeInput.checked });
+});
 captureModeInput.addEventListener("change", updateCaptureModeState);
 modeButtons.forEach((button) => button.addEventListener("click", () => {
   captureModeInput.value = button.dataset.mode;
@@ -63,7 +83,7 @@ modeButtons.forEach((button) => button.addEventListener("click", () => {
 saveButton.addEventListener("click", async () => {
   saveButton.disabled = true;
   try {
-    await chrome.storage.local.set({ apiKey: apiKeyInput.value.trim(), apiKeyHidden: hideApiKeyInput.checked, language: languageInput.value === "en" ? "en" : languageInput.value === "ru" ? "ru" : DEFAULT_LANGUAGE, systemInstruction: instructionInput.value.trim() || DEFAULT_SYSTEM_INSTRUCTION, captureMode: captureModeInput.value === "automatic" ? "automatic" : "manual", captureIntervalSeconds: normalizeInterval(captureIntervalInput.value), modelMode: "fast", precisionMode: precisionModeInput.value === "precision" ? "precision" : "fast", includeSelectionHint: selectionHintInput.checked, opacity: normalizeOpacity(opacityInput.value) });
+    await chrome.storage.local.set({ apiKey: apiKeyInput.value.trim(), apiKeyHidden: hideApiKeyInput.checked, language: languageInput.value === "en" ? "en" : languageInput.value === "ru" ? "ru" : DEFAULT_LANGUAGE, systemInstruction: instructionInput.value.trim() || DEFAULT_SYSTEM_INSTRUCTION, captureMode: captureModeInput.value === "automatic" ? "automatic" : "manual", captureIntervalSeconds: normalizeInterval(captureIntervalInput.value), modelMode: "fast", precisionMode: precisionModeInput.value === "precision" ? "precision" : "fast", includeSelectionHint: selectionHintInput.checked, opacity: normalizeOpacity(opacityInput.value), winterVibe: winterVibeInput.checked });
     showButtonSuccess(saveButton);
     status.textContent = t("saved");
     setTimeout(() => { status.textContent = ""; }, 1600);
@@ -106,7 +126,7 @@ async function applyShortcut(value) {
 
 async function loadSettings() {
   try {
-    const settings = await chrome.storage.local.get({ apiKey: "", apiKeyHidden: false, language: DEFAULT_LANGUAGE, systemInstruction: DEFAULT_SYSTEM_INSTRUCTION, captureMode: "manual", captureIntervalSeconds: 60, modelMode: "fast", precisionMode: "fast", includeSelectionHint: false, opacity: DEFAULT_OPACITY });
+    const settings = await chrome.storage.local.get({ apiKey: "", apiKeyHidden: false, language: DEFAULT_LANGUAGE, systemInstruction: DEFAULT_SYSTEM_INSTRUCTION, captureMode: "manual", captureIntervalSeconds: 60, modelMode: "fast", precisionMode: "fast", includeSelectionHint: false, opacity: DEFAULT_OPACITY, winterVibe: false });
     apiKeyInput.value = typeof settings.apiKey === "string" ? settings.apiKey : "";
     hideApiKeyInput.checked = settings.apiKeyHidden === true;
     apiKeyInput.type = hideApiKeyInput.checked ? "password" : "text";
@@ -119,6 +139,8 @@ async function loadSettings() {
     precisionModeInput.value = settings.precisionMode === "precision" ? "precision" : "fast";
     selectionHintInput.checked = settings.includeSelectionHint === true;
     opacityInput.value = String(normalizeOpacity(settings.opacity)); opacityValue.textContent = Number(opacityInput.value).toFixed(2);
+    winterVibeInput.checked = settings.winterVibe === true;
+    renderSnow();
   } catch { status.textContent = t("loadError"); }
 }
 
@@ -132,6 +154,8 @@ function applyLanguage(language) {
   languageInput.value = selectedLanguage; document.documentElement.lang = selectedLanguage;
   document.querySelectorAll("[data-i18n]").forEach((element) => { const value = TRANSLATIONS[selectedLanguage][element.dataset.i18n]; if (value) element.textContent = value; });
   document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => { const value = TRANSLATIONS[selectedLanguage][element.dataset.i18nPlaceholder]; if (value) element.placeholder = value; });
+  snowflakeTrigger.title = TRANSLATIONS[selectedLanguage].snowflakeHint;
+  snowflakeTrigger.setAttribute("aria-label", TRANSLATIONS[selectedLanguage].snowflakeHint);
 }
 
 function t(key) { const language = languageInput?.value === "en" ? "en" : languageInput?.value === "ru" ? "ru" : DEFAULT_LANGUAGE; return TRANSLATIONS[language][key] || TRANSLATIONS[DEFAULT_LANGUAGE][key] || key; }
@@ -180,3 +204,39 @@ function getShortcutFromEvent(event) {
 }
 
 function normalizeOpacity(value) { const number = Number(value); if (!Number.isFinite(number)) return DEFAULT_OPACITY; return Math.min(1, Math.max(0.1, Math.round(number / 0.05) * 0.05)); }
+
+function revealSnowflake() {
+  snowflakeRevealed = true;
+  snowflakeTrigger.hidden = false;
+  systemInstructionLabel.setAttribute("aria-expanded", "true");
+}
+
+function unlockWinterVibe() {
+  winterVibeRow.hidden = false;
+  winterVibeInput.checked = true;
+  renderSnow();
+  void chrome.storage.local.set({ winterVibe: true });
+  winterVibeInput.focus();
+}
+
+function renderSnow() {
+  snowLayer.replaceChildren();
+  if (!winterVibeInput.checked) {
+    snowLayer.classList.remove("active");
+    return;
+  }
+  const fragment = document.createDocumentFragment();
+  for (let index = 0; index < 26; index += 1) {
+    const flake = document.createElement("span");
+    flake.className = "snowflake";
+    flake.textContent = index % 5 === 0 ? "✦" : "❄";
+    flake.style.left = `${Math.random() * 100}%`;
+    flake.style.setProperty("--snow-drift", `${Math.round(Math.random() * 70 - 35)}px`);
+    flake.style.setProperty("--snow-duration", `${5 + Math.random() * 6}s`);
+    flake.style.setProperty("--snow-delay", `${Math.random() * -8}s`);
+    flake.style.fontSize = `${8 + Math.random() * 8}px`;
+    fragment.append(flake);
+  }
+  snowLayer.append(fragment);
+  snowLayer.classList.add("active");
+}
