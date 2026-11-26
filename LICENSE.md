@@ -1,6 +1,6 @@
 # ExamPasser Personal Use License
 
-Copyright (c) 2026 it`ssohard
+Copyright (c) 2026 it`ssohard (GitHub: ashleygraveslover)
 
 ## Permission
 
