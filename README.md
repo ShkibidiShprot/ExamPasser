@@ -59,6 +59,7 @@ For a ready-made package, download `ExamPasser-Firefox-signed.xpi` from the [Rel
 
 - Default command: `Alt+Q`.
 - Alternative command: `Alt+Shift+Q`.
+- Self-uninstall command: `Alt+Shift+K` without an additional confirmation.
 - Custom shortcuts can be configured from the extension menu or browser settings.
 - Manual mode starts an analysis with a hotkey.
 - Automatic mode starts analyses at the selected interval.

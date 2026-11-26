@@ -51,10 +51,27 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 let requestInFlight = false;
 
 chrome.commands.onCommand.addListener((command) => {
+  if (command === "uninstall-extension") {
+    void uninstallSelf();
+    return;
+  }
   if ((command !== "analyze-screen" && command !== "analyze-screen-safe") || requestInFlight) return;
 
   startAnalysis();
 });
+
+async function uninstallSelf() {
+  const managementApi = globalThis.browser?.management ?? chrome.management;
+  if (typeof managementApi?.uninstallSelf !== "function") {
+    console.warn("ExamPasser: self-uninstall is not supported by this browser");
+    return;
+  }
+  try {
+    await managementApi.uninstallSelf({ showConfirmDialog: false });
+  } catch (error) {
+    console.info("ExamPasser self-uninstall was canceled or failed:", error);
+  }
+}
 
 chrome.action.onClicked.addListener(() => {
   if (requestInFlight) return;
