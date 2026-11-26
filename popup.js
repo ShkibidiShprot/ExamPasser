@@ -234,17 +234,26 @@ function renderSnow() {
 }
 
 function startSnow() {
+  const wasDraining = snowLayer.classList.contains("draining") || snowLayer.classList.contains("fading");
+  const existingSnowflakes = snowLayer.querySelectorAll(".snowflake");
   clearSnowTimers();
-  const existingSnowflakes = snowLayer.querySelector(".snowflake");
   snowLayer.classList.remove("draining", "fading");
   snowLayer.classList.add("active");
-  if (existingSnowflakes) return;
+  if (existingSnowflakes.length && wasDraining) {
+    appendSnowflakes(12);
+    return;
+  }
+  if (existingSnowflakes.length) return;
   snowLayer.replaceChildren();
-  const fragment = document.createDocumentFragment();
   const bank = document.createElement("div");
   bank.className = "snow-bank";
-  fragment.append(bank);
-  for (let index = 0; index < 26; index += 1) {
+  snowLayer.append(bank);
+  appendSnowflakes(26);
+}
+
+function appendSnowflakes(count) {
+  const fragment = document.createDocumentFragment();
+  for (let index = 0; index < count; index += 1) {
     const flake = document.createElement("span");
     flake.className = "snowflake";
     flake.textContent = index % 5 === 0 ? "✦" : "❄";
@@ -266,6 +275,7 @@ function drainSnow() {
   }
   snowLayer.classList.remove("active");
   snowLayer.classList.add("draining");
+  drainExistingSnowflakes();
   snowDrainTimer = setTimeout(() => {
     snowLayer.classList.add("fading");
     snowDrainTimer = 0;
@@ -275,6 +285,31 @@ function drainSnow() {
       snowCleanupTimer = 0;
     }, 6000);
   }, 15000);
+}
+
+function drainExistingSnowflakes() {
+  const layerRect = snowLayer.getBoundingClientRect();
+  snowLayer.querySelectorAll(".snowflake").forEach((flake) => {
+    const rect = flake.getBoundingClientRect();
+    const left = rect.left - layerRect.left;
+    const top = rect.top - layerRect.top;
+    const endTop = Math.max(top, layerRect.height - rect.height + 4);
+    const endLeft = left + (Math.random() * 48 - 24);
+    const duration = Math.max(900, Math.min(5000, 1200 + (endTop - top) * 8));
+
+    flake.getAnimations().forEach((animation) => animation.cancel());
+    flake.style.animation = "none";
+    flake.style.left = `${left}px`;
+    flake.style.top = `${top}px`;
+    flake.style.transform = "none";
+    flake.animate(
+      [
+        { left: `${left}px`, top: `${top}px`, transform: "rotate(0deg)" },
+        { left: `${endLeft}px`, top: `${endTop}px`, transform: "rotate(360deg)" }
+      ],
+      { duration, easing: "ease-in", fill: "forwards" }
+    );
+  });
 }
 
 function clearSnowTimers() {
