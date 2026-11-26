@@ -19,6 +19,9 @@ Object.assign(TRANSLATIONS.en, { precisionMode: "Analysis accuracy", fastPrecisi
 Object.assign(TRANSLATIONS.uk, { winterVibe: "Режим зимового вайбу", snowflakeHint: "Відкрити режим зимового вайбу" });
 Object.assign(TRANSLATIONS.ru, { winterVibe: "Режим зимнего вайба", snowflakeHint: "Открыть режим зимнего вайба" });
 Object.assign(TRANSLATIONS.en, { winterVibe: "Winter vibe mode", snowflakeHint: "Unlock winter vibe mode" });
+Object.assign(TRANSLATIONS.uk, { apiKeyPlaceholder: "Тут введіть ваш API-ключ..." });
+Object.assign(TRANSLATIONS.ru, { apiKeyPlaceholder: "Введите здесь ваш API-ключ..." });
+Object.assign(TRANSLATIONS.en, { apiKeyPlaceholder: "Enter your API key here..." });
 const apiKeyInput = document.getElementById("api-key");
 const hideApiKeyInput = document.getElementById("hide-api-key");
 const instructionInput = document.getElementById("system-instruction");
