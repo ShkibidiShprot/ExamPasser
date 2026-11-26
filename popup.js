@@ -44,6 +44,8 @@ const snowLayer = document.getElementById("snow-layer");
 const commandsApi = globalThis.browser?.commands ?? chrome.commands;
 let isCapturingShortcut = false;
 let snowflakeRevealed = false;
+let snowDrainTimer = 0;
+let snowCleanupTimer = 0;
 const buttonFeedbackTimers = new WeakMap();
 
 applyLanguage(DEFAULT_LANGUAGE);
@@ -71,7 +73,8 @@ systemInstructionLabel.addEventListener("keydown", (event) => {
 });
 snowflakeTrigger.addEventListener("click", unlockWinterVibe);
 winterVibeInput.addEventListener("change", () => {
-  renderSnow();
+  if (winterVibeInput.checked) startSnow();
+  else drainSnow();
   void chrome.storage.local.set({ winterVibe: winterVibeInput.checked });
 });
 captureModeInput.addEventListener("change", updateCaptureModeState);
@@ -214,18 +217,25 @@ function revealSnowflake() {
 function unlockWinterVibe() {
   winterVibeRow.hidden = false;
   winterVibeInput.checked = true;
-  renderSnow();
+  startSnow();
   void chrome.storage.local.set({ winterVibe: true });
   winterVibeInput.focus();
 }
 
 function renderSnow() {
+  if (winterVibeInput.checked) startSnow();
+  else drainSnow();
+}
+
+function startSnow() {
+  clearSnowTimers();
   snowLayer.replaceChildren();
-  if (!winterVibeInput.checked) {
-    snowLayer.classList.remove("active");
-    return;
-  }
+  snowLayer.classList.remove("draining");
+  snowLayer.classList.add("active");
   const fragment = document.createDocumentFragment();
+  const bank = document.createElement("div");
+  bank.className = "snow-bank";
+  fragment.append(bank);
   for (let index = 0; index < 26; index += 1) {
     const flake = document.createElement("span");
     flake.className = "snowflake";
@@ -238,5 +248,29 @@ function renderSnow() {
     fragment.append(flake);
   }
   snowLayer.append(fragment);
-  snowLayer.classList.add("active");
+}
+
+function drainSnow() {
+  clearSnowTimers();
+  if (!snowLayer.childElementCount) {
+    snowLayer.classList.remove("active", "draining");
+    return;
+  }
+  snowLayer.classList.remove("active");
+  snowLayer.classList.add("draining");
+  snowDrainTimer = setTimeout(() => {
+    snowLayer.classList.remove("draining");
+    snowDrainTimer = 0;
+    snowCleanupTimer = setTimeout(() => {
+      snowLayer.replaceChildren();
+      snowCleanupTimer = 0;
+    }, 400);
+  }, 12000);
+}
+
+function clearSnowTimers() {
+  if (snowDrainTimer) clearTimeout(snowDrainTimer);
+  if (snowCleanupTimer) clearTimeout(snowCleanupTimer);
+  snowDrainTimer = 0;
+  snowCleanupTimer = 0;
 }
