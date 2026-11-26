@@ -46,13 +46,7 @@ let isCapturingShortcut = false;
 let snowflakeRevealed = false;
 let snowDrainTimer = 0;
 let snowCleanupTimer = 0;
-let lastSnowflakePosition = -1;
-const SNOWFLAKE_POSITIONS = [
-  { top: "18px", right: "16px", left: "auto", bottom: "auto" },
-  { top: "46%", right: "18px", left: "auto", bottom: "auto" },
-  { top: "auto", right: "18px", left: "auto", bottom: "76px" },
-  { top: "auto", right: "auto", left: "18px", bottom: "44%" }
-];
+const SNOWFLAKE_POSITION = { top: "auto", right: "auto", left: "18px", bottom: "12px" };
 const buttonFeedbackTimers = new WeakMap();
 
 applyLanguage(DEFAULT_LANGUAGE);
@@ -223,13 +217,7 @@ function normalizeOpacity(value) { const number = Number(value); if (!Number.isF
 
 function revealSnowflake() {
   if (!snowflakeTrigger.hidden) return;
-  let positionIndex = Math.floor(Math.random() * SNOWFLAKE_POSITIONS.length);
-  while (positionIndex === lastSnowflakePosition && SNOWFLAKE_POSITIONS.length > 1) {
-    positionIndex = Math.floor(Math.random() * SNOWFLAKE_POSITIONS.length);
-  }
-  lastSnowflakePosition = positionIndex;
-  const position = SNOWFLAKE_POSITIONS[positionIndex];
-  Object.assign(snowflakeTrigger.style, position);
+  Object.assign(snowflakeTrigger.style, SNOWFLAKE_POSITION);
   snowflakeRevealed = true;
   snowflakeTrigger.hidden = false;
   systemInstructionLabel.setAttribute("aria-expanded", "true");
