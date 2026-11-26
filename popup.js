@@ -235,9 +235,11 @@ function renderSnow() {
 
 function startSnow() {
   clearSnowTimers();
-  snowLayer.replaceChildren();
-  snowLayer.classList.remove("draining");
+  const existingSnowflakes = snowLayer.querySelector(".snowflake");
+  snowLayer.classList.remove("draining", "fading");
   snowLayer.classList.add("active");
+  if (existingSnowflakes) return;
+  snowLayer.replaceChildren();
   const fragment = document.createDocumentFragment();
   const bank = document.createElement("div");
   bank.className = "snow-bank";
@@ -259,19 +261,20 @@ function startSnow() {
 function drainSnow() {
   clearSnowTimers();
   if (!snowLayer.childElementCount) {
-    snowLayer.classList.remove("active", "draining");
+    snowLayer.classList.remove("active", "draining", "fading");
     return;
   }
   snowLayer.classList.remove("active");
   snowLayer.classList.add("draining");
   snowDrainTimer = setTimeout(() => {
-    snowLayer.classList.remove("draining");
+    snowLayer.classList.add("fading");
     snowDrainTimer = 0;
     snowCleanupTimer = setTimeout(() => {
       snowLayer.replaceChildren();
+      snowLayer.classList.remove("draining", "fading");
       snowCleanupTimer = 0;
-    }, 400);
-  }, 12000);
+    }, 6000);
+  }, 15000);
 }
 
 function clearSnowTimers() {
