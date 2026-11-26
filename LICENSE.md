@@ -1,6 +1,6 @@
 # ExamPasser Personal Use License
 
-Copyright (c) 2026 AGraves2347
+Copyright (c) 2026 it`ssohard
 
 ## Permission
 
